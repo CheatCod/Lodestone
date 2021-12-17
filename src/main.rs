@@ -26,12 +26,12 @@ fn server(version: String) -> content::Json<String> {
            return content::Json(response["downloads"]["server"]["url"].to_string());
         }
     }
-    content::Json("bruh".to_string())
-
+    content::Json("500".to_string())
     
 }
 
 #[derive(Deserialize, Serialize)]
+#[allow(non_snake_case)]
 struct Version {
     id: String,
     r#type: String, // bruh wtf
