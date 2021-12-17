@@ -45,7 +45,7 @@ if [ $decision == "Y" ]
     printf "Enter a username: " 
     read username
     printf "${CYAN}User set up will take place in chroot${NC}\n" 
-    chroot $1 /bin/bash << EOT
+    chroot $1 /bin/bash << "EOT"
     adduser $username
 EOT
 else 
