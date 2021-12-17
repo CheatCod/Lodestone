@@ -17,4 +17,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --verbose --release
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: mine-control
+        path: target/release/mine-control
