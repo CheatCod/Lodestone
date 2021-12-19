@@ -22,5 +22,5 @@ jobs:
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: mine-control
-        path: target/release/mine-control
+        name: Lodestone
+        path: ./target/release/Lodestone
