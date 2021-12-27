@@ -2,31 +2,32 @@
 
 #[macro_use] extern crate rocket;
 
-use std::io::BufRead;
 use std::sync::{Mutex, Arc};
-use std::thread;
-use std::time::Duration;
-
 use instance::ServerInstance;
-use rocket::{response::content, request::FromRequest, request::Request};
-use rocket::{State, request};
-use serde::{Serialize, Deserialize};
-use serde_json::{Result, Value};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use rocket::{response::content};
+use rocket::{State};
+use serde_json::{Value};
+use std::sync::atomic::{AtomicUsize};
+use std::path::Path;
+use chashmap::CHashMap;
+use json_struct::reponse_from_mojang::{VersionManifest};
 mod instance;
+mod util;
+mod json_struct;
 
 
 struct HitCount {
     count: AtomicUsize
 }
 
-struct MyManagedState {
-    server : Arc<Mutex<ServerInstance>>
+pub struct MyManagedState {
+    server : Arc<Mutex<ServerInstance>>,
+    download_status: CHashMap<String, (u64, u64)>
 }
 
 #[get("/versions/<rtype>")]
 async fn versions(rtype: String) -> content::Json<String> {
-    let response: Response = serde_json::from_str(minreq::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")
+    let response: VersionManifest = serde_json::from_str(minreq::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")
     .send().unwrap().as_str().unwrap()).unwrap();
     let mut r = Vec::new();
     for version in response.versions {
@@ -37,19 +38,47 @@ async fn versions(rtype: String) -> content::Json<String> {
     content::Json(serde_json::to_string(&r).unwrap())
 }
 
-#[get("/server/<version>")]
-async fn server(version: String) -> content::Json<String> {
-    let response: Response = serde_json::from_str(minreq::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")
+fn get_version_url(version: String) -> Option<String> {
+    let response: VersionManifest = serde_json::from_str(minreq::get("https://launchermeta.mojang.com/mc/game/version_manifest.json")
     .send().unwrap().as_str().unwrap()).unwrap();
     for version_indiv in response.versions {
         if version_indiv.id == version {
            let response : Value = serde_json::from_str(minreq::get(version_indiv.url).send().unwrap().as_str().unwrap()).unwrap();
-           return content::Json(response["downloads"]["server"]["url"].to_string());
+           return Some(response["downloads"]["server"]["url"].to_string().replace("\"", ""));
         }
     }
-    content::Json("error".to_string())
-    
+    None
 }
+
+#[get("/setup/<instance_name>/<version>")]
+async fn setup(instance_name : String, version : String, state: &State<MyManagedState>) -> String {
+    let path = format!("/home/peter/Lodestone/backend/InstanceTest/{}", instance_name); // TODO: Add a global path string
+    if Path::new(path.as_str()).exists() {
+        return "instance already exists".to_string()
+    }
+
+    match get_version_url(version) {
+        Some(url) => {
+            std::fs::create_dir(path.as_str()).unwrap();
+            println!("{}",url);
+            util::download_file(url.as_str(), format!("{}/server.jar", path).as_str(), state, instance_name).await.unwrap();
+            
+            format!("downloaded to {}", path)
+        }
+        None => "version not found".to_string()
+    }
+}
+
+#[get("/status/<instance_name>")]
+async fn download_status(instance_name : String, state: &State<MyManagedState>) -> String {
+    if !state.download_status.contains_key(&instance_name) {
+        return "does not exists".to_string();
+    }
+    return format!("{}/{}", state.download_status.get(&instance_name).unwrap().0, state.download_status.get(&instance_name).unwrap().1)
+
+
+}
+
 
 // #[get("/count")]
 // async fn test(hit_count: &State<HitCount>) -> String {
@@ -99,24 +128,14 @@ fn send(command: String, state: &State<MyManagedState>) -> String {
     format!("sent command: {}", command)
 }
 
-#[derive(Deserialize, Serialize)]
-#[allow(non_snake_case)]
-struct Version {
-    id: String,
-    r#type: String, // bruh
-    url: String,
-    time: String,
-    releaseTime: String,
-}
-
-#[derive(Deserialize, Serialize)]
-struct Response {
-    versions: Vec<Version>,
-}
-
 #[launch]
 fn rocket() -> _ {
 
-    rocket::build().mount("/", routes![versions, server, start, stop, send]).manage(MyManagedState{server : Arc::new(Mutex::new(ServerInstance::new(None)))})
+    rocket::build()
+    .mount("/", routes![start, stop, send, setup, download_status])
+    .manage(MyManagedState{
+        server : Arc::new(Mutex::new(ServerInstance::new(None))),
+        download_status: CHashMap::new()
+    })
 
 }
