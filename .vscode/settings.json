@@ -1,7 +1,9 @@
 {
   "cSpell.words": [
     "mcserver",
+    "mojang",
     "nogui",
-    "rtype"
+    "rtype",
+    "rustfmt"
   ]
 }
