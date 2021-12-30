@@ -2,6 +2,8 @@
   "cSpell.words": [
     "bson",
     "chashmap",
+    "dedup",
+    "indicatif",
     "mcserver",
     "mojang",
     "nogui",
