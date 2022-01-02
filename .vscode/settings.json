@@ -1,7 +1,14 @@
 {
   "cSpell.words": [
+    "bson",
+    "chashmap",
+    "dedup",
+    "indicatif",
     "mcserver",
+    "mojang",
     "nogui",
-    "rtype"
+    "pepega",
+    "rtype",
+    "rustfmt"
   ]
 }
