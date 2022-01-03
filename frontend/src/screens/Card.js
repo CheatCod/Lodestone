@@ -7,7 +7,7 @@ import VanillaTilt from "vanilla-tilt";
 const defaultTilt = {
   scale: 1.025,
   speed: 1000,
-  max: 8
+  max: 5
 };
 
 export default function Card({children, className, options = defaultTilt}) {
@@ -18,7 +18,9 @@ export default function Card({children, className, options = defaultTilt}) {
   // }, [options]);
   
   return (
-    <div className={"card " + className}>
+    <div
+    // ref={tilt}
+    className={"card " + className}>
       {children}
     </div>
   )
