@@ -1,0 +1,15 @@
+.instance-list{
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.instance-list .instance{
+  margin: 0 2em 0 0;
+}
+
+.new-instance-button{
+  height: 3em;
+  margin-left: 1em;
+}
