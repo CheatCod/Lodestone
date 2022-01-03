@@ -9,6 +9,7 @@
     "nogui",
     "pepega",
     "rtype",
-    "rustfmt"
+    "rustfmt",
+    "toastify"
   ]
 }
