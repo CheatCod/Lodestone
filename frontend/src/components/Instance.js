@@ -1,5 +1,4 @@
 import "./Instance.css";
-import "./Card.css";
 
 import React, { useContext, useEffect, useState } from "react";
 import { faCircle, faExclamationCircle, faPauseCircle, faPlay, faStop, faStopCircle } from '@fortawesome/free-solid-svg-icons'
@@ -23,10 +22,9 @@ async function getStatus(uuid, domain, port) {
 }
 
 async function getPlayercount(uuid, domain, port) {
-  //TODO: replace placeholder value with actual playercount
-
-  //randomly return a number between 0 and 10
-  return Math.floor(Math.random() * 10) + "/20";
+  let response = await fetch(`https://${domain}:${port}/api/instance/${uuid}/playercount`);
+  let playercount = await response.text();
+  return `${playercount}/20`;
 }
 
 export default function Instance({ name, version, flavour, port, uuid }) {
@@ -99,7 +97,7 @@ export default function Instance({ name, version, flavour, port, uuid }) {
         <h2 className="title">{utils.truncateString(name, 10)}</h2>
         <h3 className="subtitle">{domain}:{port}</h3>
       </div>
-      <h4 className="small">{utils.capitalize(flavour)} {version}</h4>
+      <small>{utils.capitalize(flavour)} {version}</small>
       <span className="player-count">{playerCount ? playerCount : "..."}</span>
 
       <div className="status-bar">
