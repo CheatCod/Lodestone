@@ -22,3 +22,4 @@ Windows support is planned.
 ---
 
 [Trello](https://trello.com/b/sCaSEPyU/lodestone)
+[Figma](https://www.figma.com/file/gM7KUynANg4JkGF3QBsYJ9/Lodestone?node-id=166%3A1621)
