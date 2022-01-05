@@ -12,7 +12,6 @@ use indicatif::{ProgressBar, ProgressStyle};
 use mongodb::{bson::doc, options::ClientOptions, sync::Client as mongoDBClient};
 use reqwest::Client;
 use rocket::State;
-use rocket::response::status::NoContent;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -130,8 +129,45 @@ pub fn create_user(state: &State<MyManagedState>, username: String, password: St
 
 }
 
+
 //TODO: permission stuff with user
 
-mod fs_helper {
-    
+pub mod db_util {
+    pub mod mongo_schema {
+        pub use serde::{Serialize, Deserialize};
+
+        #[derive(Serialize, Deserialize)]
+        pub struct Log {
+            time: i64,
+            log: String
+        }
+        #[derive(Serialize, Deserialize)]
+        pub enum EventType {
+            Normal,
+            Warning,
+            Error,
+        }
+
+        #[derive(Serialize, Deserialize)]
+        pub struct Event {
+            time: i64,
+            log: String,
+            event_type : EventType,
+        }
+
+        #[derive(Serialize, Deserialize)]
+        #[serde(crate = "rocket::serde")]
+        pub struct InstanceConfig {
+            pub name: String,
+            pub version: String,
+            pub flavour: String,
+            /// url to download the server.jar file from upon setup
+            pub url: Option<String>, 
+            pub port : Option<u32>,
+            pub uuid: Option<String>,
+            pub min_ram: Option<u32>,
+            pub max_ram: Option<u32>
+        }
+    }
+
 }

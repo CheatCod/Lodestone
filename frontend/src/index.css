@@ -11,3 +11,34 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.light {
+  --yellow: #FECB00;
+  --green: #008f06;
+  --red: #C20000;
+  --gray: #D7D7D7;
+}
+
+.safe, .active, .green{
+  color: var(--green);
+}
+
+.disabled, .gray{
+  color: var(--gray)
+}
+
+.caution, .yellow{
+  color: var(--yellow);
+}
+
+.danger, .red{
+  color: var(--red);
+}
+
+.clickable:hover{
+  cursor: pointer;
+}
+
+.modal-content{
+  border: 0;
+}

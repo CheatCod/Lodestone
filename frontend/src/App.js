@@ -1,24 +1,31 @@
-import logo from './logo.svg';
-import './App.css';
+import './Forms.css';
+import 'react-toastify/dist/ReactToastify.css';
+
+import { Route, Routes } from "react-router-dom";
+import { Slide, ToastContainer } from 'react-toastify';
+
+import Dashboard from "./screens/Dashboard.js";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+      </Routes>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        transition={Slide}
+
+      />
+    </>
   );
 }
 
