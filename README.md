@@ -1,3 +1,6 @@
+![workflow](https://github.com/CheatCod/Lodestone/actions/workflows/rust.yml/badge.svg)
+![workflow](https://github.com/CheatCod/Lodestone/actions/workflows/node.js.yml/badge.svg)
+
 # Lodestone
 
 ## What is Lodestone?
