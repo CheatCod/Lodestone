@@ -1,3 +1,6 @@
 # vscode local history extension
 .history/
+
+# dev paths
 mcserver/
+lodestone/

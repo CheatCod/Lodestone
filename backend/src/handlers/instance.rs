@@ -9,7 +9,7 @@ use crate::util::db_util::mongo_schema::*;
 
 
 
-#[get("/api/instances")]
+#[get("/instances")]
 pub async fn get_list(state: &State<MyManagedState>) -> content::Json<String> {
     let mut r = Vec::new();
     let mongodb_client = &state.mongodb_client;
@@ -30,26 +30,26 @@ pub async fn get_list(state: &State<MyManagedState>) -> content::Json<String> {
     content::Json(serde_json::to_string(&r).unwrap())
 }
 
-#[post("/api/instance/<uuid>", data = "<config>")]
+#[post("/instance/<uuid>", data = "<config>")]
 pub async fn setup(uuid : String, config: Json<InstanceConfig>, state: &State<MyManagedState>) -> (Status, String) {
     let mut manager = state.instance_manager.lock().await;
     let mut config = config.into_inner();
     config.uuid = Some(uuid);
     match manager.create_instance(config, state).await {
         Ok(uuid) => (Status::Created, uuid),
-        Err(reason) => (Status::InternalServerError, reason),
+        Err(reason) => (Status::BadRequest, reason),
     }
 }
 
-#[delete("/api/instance/<uuid>")]
+#[delete("/instance/<uuid>")]
 pub async fn delete(uuid : String, state: &State<MyManagedState>) -> (Status, String) {
     match state.instance_manager.lock().await.delete_instance(uuid) {
         Ok(()) => (Status::Ok, "Ok".to_string()),
-        Err(reason) => (Status::InternalServerError, reason),
+        Err(reason) => (Status::BadRequest, reason),
     }
 }
 
-#[get("/api/instance/<uuid>/download-progress")]
+#[get("/instance/<uuid>/download-progress")]
 pub async fn download_status(uuid: String, state: &State<MyManagedState>) -> (Status, String) {
     if !state.download_status.contains_key(&uuid) {
         return (Status::NotFound, "does not exists".to_string());
@@ -65,33 +65,33 @@ pub async fn download_status(uuid: String, state: &State<MyManagedState>) -> (St
     )
 }
 
-#[post("/api/instance/<uuid>/start")]
+#[post("/instance/<uuid>/start")]
 pub async fn start(state: &State<MyManagedState>, uuid: String) -> (Status, String) {
     match state.instance_manager.lock().await.start_instance(uuid) {
         Ok(()) => (Status::Ok, "Ok".to_string()),
-        Err(reason) => (Status::InternalServerError, reason),
+        Err(reason) => (Status::BadRequest, reason),
     }
 }
 
-#[post("/api/instance/<uuid>/stop")]
+#[post("/instance/<uuid>/stop")]
 pub async fn stop(state: &State<MyManagedState>, uuid: String) -> (Status, String) {
     match state.instance_manager.lock().await.stop_instance(uuid) {
         Ok(()) => (Status::Ok, "Ok".to_string()),
-        Err(reason) => (Status::InternalServerError, reason),
+        Err(reason) => (Status::BadRequest, reason),
     }
 }
 
-#[get("/api/instance/<uuid>/status")]
+#[get("/instance/<uuid>/status")]
 pub async fn status(state: &State<MyManagedState>, uuid: String) -> (Status, String) {
     match state.instance_manager.lock().await.get_status(uuid) {
         //return status in lowercase
         Ok(status) => (Status::Ok, status.to_lowercase()),
-        Err(reason) => (Status::InternalServerError, reason),
+        Err(reason) => (Status::BadRequest, reason),
     }
 }
 
 
-#[post("/api/instance/<uuid>/send/<command>")]
+#[post("/instance/<uuid>/send/<command>")]
 pub async fn send(uuid: String, command: String, state: &State<MyManagedState>) -> (Status, String) {
     match state
         .instance_manager
@@ -100,11 +100,11 @@ pub async fn send(uuid: String, command: String, state: &State<MyManagedState>) 
         .send_command(uuid, command)
     {
         Ok(()) => (Status::Ok, "Ok".to_string()),
-        Err(reason) => (Status::InternalServerError, reason),
+        Err(reason) => (Status::BadRequest, reason),
     }
 }
 
-#[get("/api/instance/<uuid>/playercount")]
+#[get("/instance/<uuid>/playercount")]
 pub async fn player_count(uuid: String, state: &State<MyManagedState>) -> (Status, String) {
     match state
         .instance_manager
@@ -113,11 +113,11 @@ pub async fn player_count(uuid: String, state: &State<MyManagedState>) -> (Statu
         .player_num(uuid)
     {
         Ok(size) => (Status::Ok, size.to_string()),
-        Err(reason) => (Status::InternalServerError, reason),
+        Err(reason) => (Status::BadRequest, reason),
     }
 }
 
-#[get("/api/instance/<uuid>/playerlist")]
+#[get("/instance/<uuid>/playerlist")]
 pub async fn player_list(uuid: String, state: &State<MyManagedState>) -> (Status, content::Json<String>) {
     match state
         .instance_manager
@@ -126,11 +126,11 @@ pub async fn player_list(uuid: String, state: &State<MyManagedState>) -> (Status
         .player_list(uuid)
     {
         Ok(vec) => (Status::Ok, content::Json(serde_json::to_string(&vec).unwrap())),
-        Err(reason) => (Status::InternalServerError, content::Json(reason)),
+        Err(reason) => (Status::BadRequest, content::Json(reason)),
     }
 }
 
-#[get("/api/instance/<uuid>/log?<start>&<end>")]
+#[get("/instance/<uuid>/log?<start>&<end>")]
 pub async fn get_logs(uuid: String, start: String, end: String, state: &State<MyManagedState>) -> (Status, content::Json<String>) {
     let mut r = Vec::new();
     let mongodb_client = &state.mongodb_client;
@@ -160,7 +160,7 @@ pub async fn get_logs(uuid: String, start: String, end: String, state: &State<My
         }, None)
         {
             Err(err) => {
-                return (Status::InternalServerError, content::Json(err.to_string()))
+                return (Status::BadRequest, content::Json(err.to_string()))
             },
             Ok(logs) => {
                 for log in logs {

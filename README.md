@@ -1,3 +1,6 @@
+![workflow](https://github.com/CheatCod/Lodestone/actions/workflows/rust.yml/badge.svg)
+![workflow](https://github.com/CheatCod/Lodestone/actions/workflows/node.js.yml/badge.svg)
+
 # Lodestone
 
 ## What is Lodestone?
@@ -14,7 +17,7 @@ Run the ```dev_setup.sh``` script, this will install all the dependencies.
 
 To run the front end, `cd` into `frontend` and run `npm i && npm start`
 
-To run the back end, `cd` into `backend`, make the following directories with `mkdir InstanceTest/db`, and run `mongod --dbpath InstanceTest/db` . Finally, on a seperate terminal, run `cargo run`
+To run the back end, `cd` into `backend`, make the following directories with `mkdir InstanceTest/db`, and run `mongod --dbpath InstanceTest/db` . Finally, on a separate terminal, run `cargo run`
 
 ### Windows:
 Windows support is planned.
