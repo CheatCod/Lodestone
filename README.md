@@ -13,11 +13,18 @@ Lodestone is a wrapper tool that aims to provide an easy and consistent server h
 ## Setup
 ### Ubuntu:
 
+The following assumes that you are already in the `Lodestone` directory.
+
 Run the ```dev_setup.sh``` script, this will install all the dependencies.
 
-To run the front end, `cd` into `frontend` and run `npm i && npm start`
+To run the front end, `cd` into `frontend`. Run `npm i` to install packages then `npm start` to start the dev server.
 
-To run the back end, `cd` into `backend`, make the following directories with `mkdir InstanceTest/db`, and run `mongod --dbpath InstanceTest/db` . Finally, on a separate terminal, run `cargo run`
+To run the back end, 
+`cd` into `backend`, make a directory for the program files with `mkdir LodestoneTest`. `cd` into `LodestoneTest` and set it as the home directory with `export LODESTONE_PATH=$PWD`.
+
+On a *separate terminal*, make a directory for the database with `mkdir db`, then run `mongod --dbpath db`.
+
+Finally, `cd` back to `backend` and run `cargo run`
 
 ### Windows:
 Windows support is planned.
