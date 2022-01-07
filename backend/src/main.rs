@@ -5,6 +5,7 @@ extern crate sanitize_filename;
 use chashmap::CHashMap;
 use futures_util::lock::Mutex;
 use std::env;
+use std::fs::create_dir_all;
 use std::sync::Arc;
 mod handlers;
 mod managers;
@@ -15,8 +16,10 @@ use managers::*;
 use mongodb::{options::ClientOptions, sync::Client};
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::fs::{FileServer};
-use rocket::http::Header;
+use rocket::http::{Header, Status};
 use rocket::{Request, Response};
+use std::path::{Path, PathBuf};
+
 
 pub struct MyManagedState {
     instance_manager: Arc<Mutex<InstanceManager>>,
@@ -46,6 +49,11 @@ impl Fairing for CORS {
     }
 }
 
+#[options("/<path..>")]
+fn options_handler<'a>(path: PathBuf) -> Status{
+    Status::Ok
+}
+
 #[launch]
 async fn rocket() -> _ {
     let mut client_options = ClientOptions::parse("mongodb://localhost:27017/?tls=false").unwrap();
@@ -59,6 +67,9 @@ async fn rocket() -> _ {
     env::set_current_dir(&lodestone_path).unwrap();
 
     let static_path = format!("{}web/", lodestone_path);
+    
+    //create the web direcotry if it doesn't exist
+    create_dir_all(&static_path).unwrap();
 
     //print file locations to console
     println!("Lodestone directory: {}", lodestone_path);
@@ -97,6 +108,7 @@ async fn rocket() -> _ {
             ],
         )
         .mount("/", FileServer::from(static_path))
+        .mount("/", routes![options_handler])
         .manage(MyManagedState {
             instance_manager: Arc::new(Mutex::new(
                 InstanceManager::new(
