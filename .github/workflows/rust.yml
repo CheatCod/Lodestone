@@ -39,4 +39,3 @@ jobs:
         name: Lodestone
         path: |
         ./backend/target/release/Lodestone
-        ./backend/Cargo.toml
