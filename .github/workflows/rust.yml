@@ -39,4 +39,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Lodestone
-        path: ./backend/target/release/Lodestone
+        path: |
+        ./backend/target/release/Lodestone
+        ./backend/Cargo.toml
+        
