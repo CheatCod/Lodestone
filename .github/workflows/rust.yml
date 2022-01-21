@@ -29,8 +29,6 @@ jobs:
       uses: Swatinem/rust-cache@v1
       with:
         working-directory: ./backend
-    - name: Install cpulib
-      run: sudo apt install cpuidtool libcpuid14 libcpuid-dev
 
     - name: Build Backend
       run: cargo build --verbose --release
@@ -40,6 +38,5 @@ jobs:
       with:
         name: Lodestone
         path: |
-        ./backend/target/release/Lodestone
-        ./backend/Cargo.toml
-        
+          ./backend/target/release/Lodestone
+          ./backend/Rocket.toml
