@@ -56,7 +56,14 @@ if mkdir lodestone ; then
     printf "${CYAN}TLS setup ok!...${NC}\n" 
     cd ..
     mkdir db
-    mongod --fork --syslog --dbpath db
+    cd db
+    wget http://download.redis.io/redis-stable.tar.gz
+    tar xvzf redis-stable.tar.gz
+    cd redis-stable
+    make
+    mv src/redis-server ..
+    cd ..
+    rm -r redis-stable
     echo "Setup success! Run ./lodestone"
 else 
     echo "lodestone already exists, exiting..."
