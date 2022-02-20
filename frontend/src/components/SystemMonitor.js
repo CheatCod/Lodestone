@@ -85,21 +85,6 @@ function SystemMonitor() {
 
     useInterval(() => { update() }, pollrate, true)
 
-    // const data = {
-    //     labels, // TODO need way to map the 
-    //     datasets: [
-    //         {
-    //             data: cpuHistory
-    //         },
-    // {
-    //     xAxisID: "x",
-    //     yAxisID: "y",
-    //     label: "CPU",
-    //     data: [50, 60, 70, 80, 90, 100],
-    // },
-    //     ],
-    // }
-
     return (
         <Card className="systemMonitor">
 
@@ -115,7 +100,12 @@ function SystemMonitor() {
                             labels, // TODO need way to map the
                             datasets: [
                                 {
-                                    data: cpuHistory
+                                    backgroundColor: "rgba(0, 143, 6, 0.5)",
+                                    data: cpuHistory,
+                                    tension: 0.4,
+                                    pointRadius: 0,
+                                    fill: true,
+                                    borderColor: "rgba(0, 143, 6, 1)",
                                 },
                             ],
                         }}
@@ -159,7 +149,7 @@ function SystemMonitor() {
                     <br />
                     {byteToGigabyte(mem[0])}/{byteToGigabyte(mem[1])} GB
                     <br />
-                    Free
+                    Used
                 </p>
                 <div className="graph doughnutGraph">
                     <Doughnut
@@ -170,7 +160,8 @@ function SystemMonitor() {
                                 datasets: [
                                     {
                                         data: [mem[0] / mem[1], 1 - (mem[0] / mem[1])],
-                                        backgroundColor: ['rgb(54, 162, 235)', 'rgb(255, 99, 132)',]
+                                        backgroundColor: ['rgb(0, 143, 6)', 'rgb(215, 215, 215)',]
+
                                     },
                                 ],
                             }
@@ -192,7 +183,7 @@ function SystemMonitor() {
                     <br />
                     {byteToGigabyte(disk[0])}/{byteToGigabyte(disk[1])} GB
                     <br />
-                    Free
+                    Used
                 </p>
                 <div className="graph doughnutGraph">
                     <Doughnut
@@ -203,7 +194,7 @@ function SystemMonitor() {
                                 datasets: [
                                     {
                                         data: [disk[0] / disk[1], 1 - (disk[0] / disk[1])],
-                                        backgroundColor: ['rgb(54, 162, 235)', 'rgb(255, 99, 132)',]
+                                        backgroundColor: ['rgb(0, 143, 6)', 'rgb(215, 215, 215)',]
                                     },
                                 ],
                             }

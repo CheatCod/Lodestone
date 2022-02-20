@@ -5,7 +5,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-PUBLIC_IP="$(dig +short myip.opendns.com @resolver1.opendns.com)"
+PUBLIC_IP="$(curl https://ipinfo.io/ip)"
 CA_SUBJECT="/C=US/ST=CA/O=Lodestone CA/CN=Lodestone Root CA"
 SUBJECT="/C=US/ST=CA/O=Rocket/CN=$PUBLIC_IP"
 ALT="DNS:$PUBLIC_IP"
