@@ -1,8 +1,10 @@
+use std::ops::Mul;
 use std::path::Path;
 use std::{fs, fs::File};
 use std::collections::HashMap;
 use std::io::prelude::*;
 use mongodb::{IndexModel, bson::doc, sync::Client};
+use redis::{aio::MultiplexedConnection, ConnectionLike, Commands};
 use rocket::State;
 use rocket::fairing::Result;
 use crate::MyManagedState;
@@ -17,12 +19,13 @@ pub struct InstanceManager {
     taken_ports : Vec<u32>, 
     path : String, // must end with /
     mongodb : Client,
+    redis_connection: redis::aio::MultiplexedConnection,
 }
 
 // TODO: DB IO
 // TODO : should prob change parameter String to &str
 impl InstanceManager {
-    pub fn new(path : String, mongodb : Client) -> Result<InstanceManager, String> {
+    pub fn new(path : String, mongodb : Client, mut redis_connection: redis::aio::MultiplexedConnection) -> Result<InstanceManager, String> {
         let path_to_config = format!("{}.lodestone_config/", path);
         fs::create_dir_all(path_to_config.as_str()).map_err(|e| e.to_string())?;
         if !Path::exists(Path::new(format!("{}server.properties", path_to_config).as_str())) {
@@ -32,6 +35,12 @@ impl InstanceManager {
         }
 
         let mut instance_collection: HashMap<String, ServerInstance> = HashMap::new();
+
+        let instances_names_u8: Vec<Vec<u8>> = redis_connection.smembers("servers:ids").unwrap(); // I sure fucking hope nothing goes wrong here
+        for instance_name_u8 in instances_names_u8 {
+            let instance_name = String::from_utf8(instance_name_u8).unwrap();
+
+        }
 
         let database_names = mongodb
             .list_database_names(None, None).unwrap();
@@ -53,6 +62,7 @@ impl InstanceManager {
             instance_collection,
             path,
             mongodb,
+            redis_connection,
             taken_ports : vec![]
         })
     }
