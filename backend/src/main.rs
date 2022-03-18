@@ -6,6 +6,7 @@ use chashmap::CHashMap;
 use futures_util::lock::Mutex;
 use std::env;
 use std::fs::create_dir_all;
+use std::process::Command;
 use std::sync::Arc;
 mod handlers;
 mod managers;
@@ -56,6 +57,8 @@ fn options_handler<'a>(path: PathBuf) -> Status{
 
 #[launch]
 async fn rocket() -> _ {
+    // Command::new("lodestone/db/redis-server").current_dir("lodestone/db").spawn().unwrap();
+
     let mut client_options = ClientOptions::parse("mongodb://localhost:27017/?tls=false").unwrap();
     client_options.app_name = Some("MongoDB Client".to_string());
     let client = Client::with_options(client_options).unwrap();
