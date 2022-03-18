@@ -16,16 +16,16 @@ use instance_manager::InstanceManager;
 use managers::*;
 use mongodb::{options::ClientOptions, sync::Client};
 use rocket::fairing::{Fairing, Info, Kind};
-use rocket::fs::{FileServer};
+use rocket::fs::FileServer;
 use rocket::http::{Header, Status};
 use rocket::{Request, Response};
 use std::path::{Path, PathBuf};
-
 
 pub struct MyManagedState {
     instance_manager: Arc<Mutex<InstanceManager>>,
     download_status: CHashMap<String, (u64, u64)>,
     mongodb_client: Client,
+    redis_client: redis::aio::MultiplexedConnection,
 }
 
 pub struct CORS;
@@ -45,13 +45,16 @@ impl Fairing for CORS {
             "Access-Control-Allow-Methods",
             "POST, GET, PATCH, OPTIONS, DELETE",
         ));
-        res.set_header(Header::new("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token"));
+        res.set_header(Header::new(
+            "Access-Control-Allow-Headers",
+            "Origin, Content-Type, X-Auth-Token",
+        ));
         res.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
     }
 }
 
 #[options("/<path..>")]
-fn options_handler<'a>(path: PathBuf) -> Status{
+fn options_handler<'a>(path: PathBuf) -> Status {
     Status::Ok
 }
 
@@ -63,6 +66,12 @@ async fn rocket() -> _ {
     client_options.app_name = Some("MongoDB Client".to_string());
     let client = Client::with_options(client_options).unwrap();
 
+    let redis_connection = redis::Client::open("redis://127.0.0.1/")
+        .unwrap()
+        .get_multiplexed_async_std_connection()
+        .await
+        .unwrap();
+
     let lodestone_path = match env::var("LODESTONE_PATH") {
         Ok(val) => format!("{}/", val),
         Err(_) => format!("{}/", env::current_dir().unwrap().display()),
@@ -70,7 +79,7 @@ async fn rocket() -> _ {
     env::set_current_dir(&lodestone_path).unwrap();
 
     let static_path = format!("{}web/", lodestone_path);
-    
+
     //create the web direcotry if it doesn't exist
     create_dir_all(&static_path).unwrap();
 
@@ -114,14 +123,12 @@ async fn rocket() -> _ {
         .mount("/", routes![options_handler])
         .manage(MyManagedState {
             instance_manager: Arc::new(Mutex::new(
-                InstanceManager::new(
-                    lodestone_path,
-                    client.clone(),
-                )
-                .unwrap(),
+                InstanceManager::new(lodestone_path, client.clone(), redis_connection.clone())
+                    .unwrap(),
             )),
             download_status: CHashMap::new(),
             mongodb_client: client,
+            redis_client: redis_connection,
         })
         .attach(CORS)
 }
