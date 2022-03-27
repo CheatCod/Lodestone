@@ -1,18 +1,19 @@
-use std::{collections::HashMap, path::Path, fs::File, io::BufReader};
+use std::path::PathBuf;
+use std::{collections::HashMap, fs::File, io::BufReader};
 use std::io::{prelude::*, LineWriter};
 use std::result::Result;
 pub struct PropertiesManager {
     /// (line number, current value, default value)
     properties : HashMap<String, (i32, String, String)>,
-    path_to_properties : String
+    path_to_properties : PathBuf
 }
 
 impl PropertiesManager {
-    pub fn new(path : String) -> Result<PropertiesManager, String> {
-        if !Path::new(path.as_str()).exists() {
+    pub fn new(path : PathBuf) -> Result<PropertiesManager, String> {
+        if !path.exists() {
             return Err("server.properties not found".to_string());
         }
-        let file = File::open(path.as_str()).unwrap();
+        let file = File::open(path.clone()).unwrap();
         let buf_reader = BufReader::new(file);
         let mut properties = HashMap::new();
         let line_num = 0;
@@ -26,23 +27,23 @@ impl PropertiesManager {
         })
     }
 
-    pub fn edit_field(&mut self, field : String, value : String) -> Result<(), String> {
-        let line = self.properties.get_mut(&field).ok_or("property does not exist".to_string())?;
+    pub fn edit_field(&mut self, field : &String, value : String) -> Result<(), String> {
+        let line = self.properties.get_mut(field).ok_or("property does not exist".to_string())?;
         line.1 = value;
         Ok(())
     }
 
-    pub fn get_field(&mut self, field : String) -> Result<String, String> {
-        let line = self.properties.get_mut(&field).ok_or("property does not exist".to_string())?;
+    pub fn get_field(&self, field : &String) -> Result<String, String> {
+        let line = self.properties.get(field).ok_or("property does not exist".to_string())?;
         Ok(line.2.clone())
     }
 
     /// flush the internal properties buffer to file,
     /// this function is expensive so repeated calling is discouraged.
-    pub fn write_to_file(self) -> Result<(), String> {
-        let file = File::create(self.path_to_properties.as_str()).map_err(|e| e.to_string())?;
+    pub fn write_to_file(&self) -> Result<(), String> {
+        let file = File::create(&self.path_to_properties).map_err(|e| e.to_string())?;
         let mut line_writer = LineWriter::new(file);
-        for entry in self.properties {
+        for entry in &self.properties {
             line_writer.write_all(format!("{}={}\n", entry.0, entry.1.1).as_bytes()).unwrap();
         }
         line_writer.flush().unwrap();

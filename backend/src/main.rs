@@ -15,11 +15,12 @@ use instance_manager::InstanceManager;
 use managers::*;
 use mongodb::{options::ClientOptions, sync::Client};
 use rocket::fairing::{Fairing, Info, Kind};
-use rocket::fs::{FileServer};
+use rocket::fs::FileServer;
 use rocket::http::{Header, Status};
-use rocket::{Request, Response};
-use std::path::{Path, PathBuf};
-
+use rocket::{routes, Request, Response};
+use std::path::PathBuf;
+use std::{thread, time};
+use std::io::{BufRead, BufReader, stdin};
 
 pub struct MyManagedState {
     instance_manager: Arc<Mutex<InstanceManager>>,
@@ -44,36 +45,51 @@ impl Fairing for CORS {
             "Access-Control-Allow-Methods",
             "POST, GET, PATCH, OPTIONS, DELETE",
         ));
-        res.set_header(Header::new("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token"));
+        res.set_header(Header::new(
+            "Access-Control-Allow-Headers",
+            "Origin, Content-Type, X-Auth-Token",
+        ));
         res.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
     }
 }
 
 #[options("/<path..>")]
-fn options_handler<'a>(path: PathBuf) -> Status{
+fn options_handler<'a>(path: PathBuf) -> Status {
     Status::Ok
 }
 
-#[launch]
-async fn rocket() -> _ {
+#[rocket::main]
+async fn main() {
     let mut client_options = ClientOptions::parse("mongodb://localhost:27017/?tls=false").unwrap();
     client_options.app_name = Some("MongoDB Client".to_string());
     let client = Client::with_options(client_options).unwrap();
 
-    let lodestone_path = match env::var("LODESTONE_PATH") {
-        Ok(val) => format!("{}/", val),
-        Err(_) => format!("{}/", env::current_dir().unwrap().display()),
+    let mut lodestone_path = match env::var("LODESTONE_PATH") {
+        Ok(val) => PathBuf::from(val),
+        Err(_) => env::current_dir().unwrap(),
     };
+    // lodestone_path = PathBuf::from("/home/peter/Lodestone/backend/lodestone/");
     env::set_current_dir(&lodestone_path).unwrap();
 
-    let static_path = format!("{}web/", lodestone_path);
-    
+    let static_path = lodestone_path.join("web");
+
     //create the web direcotry if it doesn't exist
     create_dir_all(&static_path).unwrap();
 
     //print file locations to console
-    println!("Lodestone directory: {}", lodestone_path);
+    println!("Lodestone directory: {}", lodestone_path.display());
 
+    let instance_manager = Arc::new(Mutex::new(
+        InstanceManager::new(lodestone_path, client.clone()).unwrap(),
+    ));
+    let instance_manager_closure = instance_manager.clone();
+    // rocket::tokio::spawn(async move {
+    //     let reader = BufReader::new(stdin());
+    //     for line_result in reader.lines() {
+    //         let line = line_result.unwrap_or("failed".to_string());
+    //         println!("{}", line);
+    //     }
+    // });
     rocket::build()
         .mount(
             "/api/v1/",
@@ -91,6 +107,9 @@ async fn rocket() -> _ {
                 instance::get_logs,
                 instance::player_count,
                 instance::player_list,
+                instance::list_resource,
+                instance::load_resource,
+                instance::unload_resource,
                 jar::vanilla_versions,
                 jar::vanilla_jar,
                 jar::vanilla_filters,
@@ -110,15 +129,12 @@ async fn rocket() -> _ {
         .mount("/", FileServer::from(static_path))
         .mount("/", routes![options_handler])
         .manage(MyManagedState {
-            instance_manager: Arc::new(Mutex::new(
-                InstanceManager::new(
-                    lodestone_path,
-                    client.clone(),
-                )
-                .unwrap(),
-            )),
+            instance_manager,
             download_status: CHashMap::new(),
             mongodb_client: client,
         })
         .attach(CORS)
+        .launch()
+        .await;
+    println!("shutting down");
 }
