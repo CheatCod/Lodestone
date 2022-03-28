@@ -1,11 +1,16 @@
+#![allow(unused_must_use)]
+
 #[macro_use]
 extern crate rocket;
 extern crate sanitize_filename;
 
 use chashmap::CHashMap;
 use futures_util::lock::Mutex;
+use managers::instance_manager::resource_management::ResourceType;
+use regex::Regex;
 use std::env;
 use std::fs::create_dir_all;
+use std::io::{stdin, BufRead, BufReader};
 use std::sync::Arc;
 mod handlers;
 mod managers;
@@ -20,7 +25,8 @@ use rocket::http::{Header, Status};
 use rocket::{routes, Request, Response};
 use std::path::PathBuf;
 use std::{thread, time};
-use std::io::{BufRead, BufReader, stdin};
+use sys_info::{cpu_num, cpu_speed, disk_info, loadavg, mem_info, os_release, os_type};
+use systemstat::{Duration, Platform, System};
 
 pub struct MyManagedState {
     instance_manager: Arc<Mutex<InstanceManager>>,
@@ -83,13 +89,137 @@ async fn main() {
         InstanceManager::new(lodestone_path, client.clone()).unwrap(),
     ));
     let instance_manager_closure = instance_manager.clone();
-    // rocket::tokio::spawn(async move {
-    //     let reader = BufReader::new(stdin());
-    //     for line_result in reader.lines() {
-    //         let line = line_result.unwrap_or("failed".to_string());
-    //         println!("{}", line);
-    //     }
-    // });
+    rocket::tokio::spawn(async move {
+        let reader = BufReader::new(stdin());
+        for line_result in reader.lines() {
+            let mut instance_manager = instance_manager_closure.lock().await;
+            let line = line_result.unwrap_or("failed to read stdin command".to_string());
+            let line_vec: Vec<&str> = line.split_whitespace().collect();
+            let regex = Regex::new(r"instance[[:space:]]+(\w+)[[:space:]]+start").unwrap();
+            if regex.is_match(&line) {
+                instance_manager
+                    .start_instance(line_vec[1].to_string())
+                    .map_err(|err| eprintln!("{}", err));
+            }
+            let regex = Regex::new(r"instance[[:space:]]+(\w+)[[:space:]]+stop").unwrap();
+            if regex.is_match(&line) {
+                instance_manager
+                    .stop_instance(line_vec[1].to_string())
+                    .map_err(|err| eprintln!("{}", err));
+            }
+            let regex =
+                Regex::new(r"instance[[:space:]]+(\w+)[[:space:]]+send[[:space:]]+(\w+)").unwrap();
+            if regex.is_match(&line) {
+                instance_manager
+                    .send_command(line_vec[1].to_string(), line_vec[3].to_string())
+                    .map_err(|err| eprintln!("{}", err));
+            }
+            let regex = Regex::new(r"instance[[:space:]]+(\w+)[[:space:]]+playercount").unwrap();
+            if regex.is_match(&line) {
+                match instance_manager.player_num(line_vec[1].to_string()) {
+                    Ok(size) => println!("{}", size.to_string()),
+                    Err(reason) => eprintln!("{}", reason),
+                }
+            }
+            let regex = Regex::new(r"instance[[:space:]]+(\w+)[[:space:]]+playerlist").unwrap();
+            if regex.is_match(&line) {
+                match instance_manager.player_list(line_vec[1].to_string()) {
+                    Ok(list) => println!("{:?}", list),
+                    Err(reason) => eprintln!("{}", reason),
+                }
+            }
+            let regex = Regex::new(
+                r"instance[[:space:]]+(\w+)[[:space:]]+log[[:space:]]+(\d+)[[:space:]]+(\d+)",
+            )
+            .unwrap();
+            // TODO implement mongodb get logs
+            // match regex.capture(&line) {
+            //     Some(cap) => match instance_manager.player_list(line_vec[1].to_string()) {
+            //         Ok(list) => println!("{:?}", list),
+            //         Err(reason) => eprintln!("{}", reason),
+            //     }
+            //     None() => ()
+            // }
+            // TODO turn string into enum
+            let regex = Regex::new(r"instance[[:space:]]+(\w+)[[:space:]]+resources[[:space:]]+((?:Mod)|(?:World))[[:space:]]+list").unwrap();
+            match regex.captures(&line) {
+                Some(cap) => {
+                    match instance_manager.list_resource(&cap[1].to_string(),
+                        if cap.get(2).unwrap().as_str().eq("Mod") {
+                            ResourceType::Mod
+                        } else {
+                            ResourceType::World
+                        },
+                    ) {
+                        Ok(list) => {
+                            println!("loaded: {:?}", list.0);
+                            println!("unloaded: {:?}", list.1);
+                        },
+                        Err(reason) => println!("{}", reason)
+                    }
+                },
+                _ => (), // Not a match, do nothing
+            }
+
+            if Regex::new(r"sys[[:space:]]+mem").unwrap().is_match(&line) {
+                match mem_info() {
+                    Ok(mem) => println!("{}/{}", mem.free, mem.total),
+                    Err(_) => eprintln!("failed to get ram"),
+                }
+            }
+            if Regex::new(r"sys[[:space:]]+disk").unwrap().is_match(&line) {
+                match disk_info() {
+                    Ok(disk) => println!("{}/{}", disk.free, disk.total),
+                    Err(_) => eprintln!("failed to get disk"),
+                }
+            }
+            if Regex::new(r"sys[[:space:]]+cpuspeed")
+                .unwrap()
+                .is_match(&line)
+            {
+                match cpu_speed() {
+                    Ok(cpuspeed) => println!("{}", cpuspeed.to_string()),
+                    Err(_) => eprintln!("failed to get cpu speed"),
+                }
+            }
+            if Regex::new(r"sys[[:space:]]+cpuutil")
+                .unwrap()
+                .is_match(&line)
+            {
+                let sys = System::new();
+                match sys.cpu_load_aggregate() {
+                    Ok(load) => {
+                        thread::sleep(Duration::from_secs(1));
+                        println!("{}", load.done().unwrap().user.to_string())
+                    }
+                    Err(_) => println!("failed to get cpu info"),
+                }
+            }
+            if Regex::new(r"sys[[:space:]]+cpuutil")
+                .unwrap()
+                .is_match(&line)
+            {
+                match os_release() {
+                    Ok(release) => match os_type() {
+                        Ok(ostype) => println!("{} {}", ostype, release),
+                        Err(_) => eprintln!("failed to get os info"),
+                    },
+                    Err(_) => eprintln!("failed to get os info"),
+                }
+            }
+            // TODO #[get("/sys/osinfo")]
+            if Regex::new(r"sys[[:space:]]+uptime")
+                .unwrap()
+                .is_match(&line)
+            {
+                let sys = System::new();
+                match sys.uptime() {
+                    Ok(uptime) => println!("{}", uptime.as_secs_f64().to_string()),
+                    Err(_) => println!("failed to get cpu info"),
+                }
+            }
+        }
+    });
     rocket::build()
         .mount(
             "/api/v1/",
