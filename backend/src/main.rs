@@ -64,6 +64,11 @@ fn options_handler<'a>(path: PathBuf) -> Status {
     Status::Ok
 }
 
+#[catch(500)]
+fn internal_server_error() -> &'static str {
+    "Unknown Internal Error"
+}
+
 #[rocket::main]
 async fn main() {
     let mut client_options = ClientOptions::parse("mongodb://localhost:27017/?tls=false").unwrap();
@@ -246,6 +251,9 @@ async fn main() {
                 jar::fabric_versions,
                 jar::fabric_jar,
                 jar::fabric_filters,
+                jar::paper_versions,
+                jar::paper_jar,
+                jar::paper_filters,
                 jar::flavours,
                 system::get_ram,
                 system::get_disk,
@@ -258,6 +266,7 @@ async fn main() {
         )
         .mount("/", FileServer::from(static_path))
         .mount("/", routes![options_handler])
+        .register("/", catchers![internal_server_error])
         .manage(MyManagedState {
             instance_manager,
             download_status: CHashMap::new(),
