@@ -1,6 +1,8 @@
 ![workflow](https://github.com/CheatCod/Lodestone/actions/workflows/rust.yml/badge.svg)
 ![workflow](https://github.com/CheatCod/Lodestone/actions/workflows/node.js.yml/badge.svg)
 
+**This project has been moved to the organization repo: https://github.com/Lodestone-Team/client**
+
 # Lodestone
 
 ## What is Lodestone?
